@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Calendar, Target, Users, Share2, Heart, ExternalLink, AlertCircle, CheckCircle, Clock, ArrowLeft } from 'lucide-react';
+import { Calendar, Target, Users, Share2, Heart, ExternalLink, AlertCircle, CheckCircle, Clock, ArrowLeft, Trophy } from 'lucide-react';
 import { useCampaigns, Campaign } from '../hooks/useCampaigns';
 import { useContributions, Contribution } from '../hooks/useContributions';
 import { useAuth } from '../hooks/useAuth';
 import { useWallet } from '../hooks/useWallet';
 import { ipfsService } from '../lib/ipfs';
 import { platformWalletService } from '../lib/platformWallet';
+import DonationModal from '../components/DonationModal';
+import SupportersHallOfFame from '../components/SupportersHallOfFame';
 import toast from 'react-hot-toast';
 
 const CampaignDetail: React.FC = () => {
@@ -15,15 +17,14 @@ const CampaignDetail: React.FC = () => {
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [contributions, setContributions] = useState<Contribution[]>([]);
   const [loading, setLoading] = useState(true);
-  const [donationAmount, setDonationAmount] = useState('');
-  const [donating, setDonating] = useState(false);
+  const [showDonationModal, setShowDonationModal] = useState(false);
   const [processingPayout, setProcessingPayout] = useState(false);
   const [processingRefund, setProcessingRefund] = useState(false);
 
   const { user, profile } = useAuth();
   const { walletAddress, isConnected } = useWallet();
   const { getCampaignById } = useCampaigns();
-  const { createContribution, getCampaignContributions, processPayout, processRefunds } = useContributions();
+  const { getCampaignContributions, processPayout, processRefunds } = useContributions();
 
   useEffect(() => {
     if (id) {
@@ -51,33 +52,8 @@ const CampaignDetail: React.FC = () => {
     }
   };
 
-  const handleDonate = async () => {
-    if (!user || !isConnected || !campaign) {
-      toast.error('Please sign in and connect your wallet');
-      return;
-    }
-
-    if (!donationAmount || parseFloat(donationAmount) <= 0) {
-      toast.error('Please enter a valid donation amount');
-      return;
-    }
-
-    try {
-      setDonating(true);
-      
-      await createContribution({
-        campaign_id: campaign.id,
-        amount: parseFloat(donationAmount),
-      });
-
-      toast.success('Donation successful! Thank you for your support.');
-      setDonationAmount('');
-      await fetchCampaignData(); // Refresh data
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to process donation');
-    } finally {
-      setDonating(false);
-    }
+  const handleDonationSuccess = () => {
+    fetchCampaignData(); // Refresh data after successful donation
   };
 
   const handlePayout = async () => {
@@ -242,45 +218,8 @@ const CampaignDetail: React.FC = () => {
               </div>
             </div>
 
-            {/* Donors List */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Supporters ({contributions.length})
-              </h3>
-              {contributions.length > 0 ? (
-                <div className="space-y-4">
-                  {contributions.map((contribution) => (
-                    <div key={contribution.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center">
-                          <Users className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900">
-                            {contribution.contributor?.username || 'Anonymous'}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {contribution.contributor?.wallet_address ? 
-                              `${contribution.contributor.wallet_address.slice(0, 6)}...${contribution.contributor.wallet_address.slice(-4)}` : 
-                              'No wallet'
-                            }
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-gray-900">{contribution.amount.toFixed(2)} SHM</p>
-                        <p className="text-xs text-gray-500">{new Date(contribution.created_at).toLocaleDateString()}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">No supporters yet. Be the first to back this campaign!</p>
-                </div>
-              )}
-            </div>
+            {/* Supporters Hall of Fame */}
+            <SupportersHallOfFame contributions={contributions} />
 
             {/* Admin Controls */}
             {isAdmin && campaignEnded && (
@@ -326,27 +265,12 @@ const CampaignDetail: React.FC = () => {
                 
                 {user && isConnected ? (
                   <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Donation Amount (SHM)
-                      </label>
-                      <input
-                        type="number"
-                        value={donationAmount}
-                        onChange={(e) => setDonationAmount(e.target.value)}
-                        placeholder="0.00"
-                        min="0"
-                        step="0.01"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      />
-                    </div>
-                    
                     <button
-                      onClick={handleDonate}
-                      disabled={donating || !donationAmount}
-                      className="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                      onClick={() => setShowDonationModal(true)}
+                      className="w-full flex items-center justify-center space-x-2 py-3 bg-gradient-to-r from-pink-500 to-red-500 text-white rounded-lg hover:from-pink-600 hover:to-red-600 transition-all font-medium"
                     >
-                      {donating ? 'Processing...' : 'Donate Now'}
+                      <Heart className="w-5 h-5" />
+                      <span>Support Campaign</span>
                     </button>
                   </div>
                 ) : (
@@ -411,6 +335,13 @@ const CampaignDetail: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <DonationModal
+        isOpen={showDonationModal}
+        onClose={() => setShowDonationModal(false)}
+        campaign={campaign}
+        onDonationSuccess={handleDonationSuccess}
+      />
     </div>
   );
 };

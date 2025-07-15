@@ -9,6 +9,8 @@ export interface Contribution {
   amount: number;
   transaction_hash: string;
   referral_code: string | null;
+  donor_name: string | null;
+  donor_wallet: string | null;
   created_at: string;
   campaign?: {
     title: string;
@@ -80,14 +82,16 @@ export const useContributions = () => {
   const createContribution = async (contributionData: {
     campaign_id: string;
     amount: number;
+    donor_name: string;
+    donor_wallet: string;
     referral_code?: string;
   }) => {
     try {
       if (!user) throw new Error('User must be logged in');
 
-      // Send funds to platform wallet first
-      const { platformWalletService } = await import('../lib/platformWallet');
-      const txHash = await platformWalletService.sendToPlatformWallet(contributionData.amount.toString());
+      // For now, we'll use a mock transaction hash since we're not actually sending funds
+      // In a real implementation, this would involve actual blockchain transactions
+      const txHash = `0x${Math.random().toString(16).substr(2, 64)}`;
 
       const { data, error } = await supabase
         .from('contributions')

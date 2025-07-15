@@ -120,6 +120,10 @@ const Campaigns: React.FC = () => {
                 key={campaign.id}
                 campaign={campaign}
                 onClick={() => handleCampaignClick(campaign.id)}
+                onDonationSuccess={() => {
+                  // Refresh campaigns data after donation
+                  window.location.reload();
+                }}
               />
             ))}
           </div>

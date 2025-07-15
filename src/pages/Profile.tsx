@@ -1,11 +1,14 @@
 import React from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useContributions } from '../hooks/useContributions';
-import { User, Shield, TrendingUp, Calendar, ExternalLink } from 'lucide-react';
+import { useWallet } from '../hooks/useWallet';
+import { User, Shield, TrendingUp, Calendar, ExternalLink, Wallet } from 'lucide-react';
+import WalletConnection from '../components/WalletConnection';
 
 const Profile: React.FC = () => {
   const { profile } = useAuth();
   const { contributions } = useContributions();
+  const { balance, isConnected } = useWallet();
 
   if (!profile) {
     return (
@@ -47,6 +50,20 @@ const Profile: React.FC = () => {
                   <div className="text-2xl font-bold text-gray-900">{profile.total_donated.toFixed(2)} SHM</div>
                   <div className="text-sm text-gray-500">Total Contributed</div>
                 </div>
+                
+                {/* Wallet Info */}
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-700">Wallet</span>
+                  </div>
+                  <WalletConnection />
+                  {isConnected && (
+                    <div className="mt-2 text-center">
+                      <div className="text-lg font-semibold text-gray-900">{parseFloat(balance).toFixed(4)} SHM</div>
+                      <div className="text-xs text-gray-500">Available Balance</div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -70,6 +87,12 @@ const Profile: React.FC = () => {
                   <span className="text-gray-600">NFTs Collected</span>
                   <span className="font-medium text-orange-600">0</span>
                 </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Wallet Balance</span>
+                  <span className="font-medium text-blue-600">
+                    {isConnected ? `${parseFloat(balance).toFixed(4)} SHM` : 'Not Connected'}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -83,16 +106,27 @@ const Profile: React.FC = () => {
                 {contributions.length > 0 ? contributions.map((contribution) => (
                   <div key={contribution.id} className="flex items-center justify-between py-4 border-b border-gray-100 last:border-b-0">
                     <div className="flex-1">
-                      <h4 className="font-medium text-gray-900">{contribution.campaign?.title || 'Unknown Campaign'}</h4>
+                      <h4 className="font-medium text-gray-900">
+                        {contribution.campaign?.title || 'Unknown Campaign'}
+                      </h4>
+                      {contribution.donor_name && (
+                        <p className="text-sm text-purple-600 font-medium">
+                          Donated as: {contribution.donor_name}
+                        </p>
+                      )}
                       <div className="flex items-center space-x-4 mt-1">
                         <div className="flex items-center space-x-1 text-sm text-gray-500">
                           <Calendar className="w-4 h-4" />
                           <span>{new Date(contribution.created_at).toLocaleDateString()}</span>
                         </div>
-                        <div className="flex items-center space-x-1 text-sm text-gray-500">
-                          <ExternalLink className="w-4 h-4" />
-                          <span className="font-mono">{contribution.transaction_hash.slice(0, 10)}...</span>
-                        </div>
+                        {contribution.donor_wallet && (
+                          <div className="flex items-center space-x-1 text-sm text-gray-500">
+                            <Wallet className="w-4 h-4" />
+                            <span className="font-mono">
+                              {contribution.donor_wallet.slice(0, 6)}...{contribution.donor_wallet.slice(-4)}
+                            </span>
+                          </div>
+                        )}
                       </div>
                       {contribution.referral_code && (
                         <div className="mt-1">

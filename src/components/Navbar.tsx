@@ -1,8 +1,8 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Wallet, User, Vote, Share2, Home, BarChart3, LogOut } from 'lucide-react';
+import { User, Vote, Share2, Home, BarChart3, LogOut } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { useWallet } from '../hooks/useWallet';
+import WalletConnection from './WalletConnection';
 
 interface NavbarProps {
   onAuthClick: () => void;
@@ -11,7 +11,6 @@ interface NavbarProps {
 const Navbar: React.FC<NavbarProps> = ({ onAuthClick }) => {
   const location = useLocation();
   const { user, signOut } = useAuth();
-  const { walletAddress, isConnected, connectWallet, isConnecting } = useWallet();
 
   const navItems = [
     { path: '/', label: 'Dashboard', icon: Home },
@@ -64,25 +63,7 @@ const Navbar: React.FC<NavbarProps> = ({ onAuthClick }) => {
           <div className="flex items-center space-x-4">
             {user ? (
               <div className="flex items-center space-x-3">
-                {isConnected ? (
-                  <div className="flex items-center space-x-2 px-3 py-2 bg-green-100 text-green-800 rounded-lg">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <span className="text-sm font-medium">
-                      {walletAddress?.slice(0, 6)}...{walletAddress?.slice(-4)}
-                    </span>
-                  </div>
-                ) : (
-                  <button
-                    onClick={connectWallet}
-                    disabled={isConnecting}
-                    className="flex items-center space-x-2 px-3 py-2 bg-orange-100 text-orange-800 rounded-lg hover:bg-orange-200 transition-colors disabled:opacity-50"
-                  >
-                    <Wallet className="w-4 h-4" />
-                    <span className="text-sm font-medium">
-                      {isConnecting ? 'Connecting...' : 'Connect Wallet'}
-                    </span>
-                  </button>
-                )}
+                <WalletConnection />
                 
                 <button
                   onClick={handleSignOut}
