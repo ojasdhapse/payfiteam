@@ -80,30 +80,38 @@ export const useContributions = () => {
   const createContribution = async (contributionData: {
     campaign_id: string;
     amount: number;
-    transaction_hash: string;
     referral_code?: string;
   }) => {
     try {
       if (!user) throw new Error('User must be logged in');
+
+      // Send funds to platform wallet first
+      const { platformWalletService } = await import('../lib/platformWallet');
+      const txHash = await platformWalletService.sendToPlatformWallet(contributionData.amount.toString());
 
       const { data, error } = await supabase
         .from('contributions')
         .insert({
           ...contributionData,
           contributor_id: user.id,
+          transaction_hash: txHash,
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      // Update user's total donated amount
-      const { error: profileError } = await supabase.rpc('increment_total_donated', {
-        user_id: user.id,
-        amount: contributionData.amount
-      });
-
-      if (profileError) console.error('Error updating total donated:', profileError);
+      // Update campaign funding and user profile
+      await Promise.all([
+        supabase.rpc('increment_campaign_funding', {
+          campaign_id: contributionData.campaign_id,
+          amount: contributionData.amount
+        }),
+        supabase.rpc('increment_total_donated', {
+          user_id: user.id,
+          amount: contributionData.amount
+        })
+      ]);
 
       return data;
     } catch (err) {
@@ -150,6 +158,66 @@ export const useContributions = () => {
     }
   };
 
+  const processPayout = async (campaignId: string, creatorAddress: string, amount: number) => {
+    try {
+      if (!user) throw new Error('User must be logged in');
+
+      const { platformWalletService } = await import('../lib/platformWallet');
+      const txHash = await platformWalletService.payoutToCampaignCreator(creatorAddress, amount.toString());
+
+      // Update campaign status
+      const { error } = await supabase
+        .from('campaigns')
+        .update({ 
+          is_active: false,
+          payout_transaction_hash: txHash,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', campaignId);
+
+      if (error) throw error;
+      return txHash;
+    } catch (err) {
+      console.error('Error processing payout:', err);
+      throw err;
+    }
+  };
+
+  const processRefunds = async (campaignId: string, contributions: Contribution[]) => {
+    try {
+      if (!user) throw new Error('User must be logged in');
+
+      const { platformWalletService } = await import('../lib/platformWallet');
+      const refundPromises = contributions.map(async (contribution) => {
+        if (contribution.contributor?.wallet_address) {
+          return platformWalletService.refundToDonor(
+            contribution.contributor.wallet_address,
+            contribution.amount.toString()
+          );
+        }
+        return null;
+      });
+
+      const refundTxHashes = await Promise.all(refundPromises);
+
+      // Update campaign status
+      const { error } = await supabase
+        .from('campaigns')
+        .update({ 
+          is_active: false,
+          refund_processed: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', campaignId);
+
+      if (error) throw error;
+      return refundTxHashes.filter(Boolean);
+    } catch (err) {
+      console.error('Error processing refunds:', err);
+      throw err;
+    }
+  };
+
   return {
     contributions,
     loading,
@@ -157,6 +225,8 @@ export const useContributions = () => {
     createContribution,
     getCampaignContributions,
     getTotalContributed,
+    processPayout,
+    processRefunds,
     refetch: fetchUserContributions,
   };
 };

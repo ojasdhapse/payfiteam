@@ -155,11 +155,29 @@ export const useAuthProvider = () => {
 
   const signOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      // Always update UI state first for responsive UX
+      setUser(null);
+      setProfile(null);
+      setSession(null);
+      
+      // Attempt to sign out from Supabase, but don't block UI if it fails
+      try {
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+          console.warn('Supabase sign out error (non-blocking):', error);
+        }
+      } catch (supabaseError) {
+        console.warn('Supabase unreachable during sign out:', supabaseError);
+      }
+      
+      // Note: We intentionally do NOT disconnect the wallet here
+      // The wallet connection should persist across sign-in/sign-out cycles
     } catch (error) {
-      console.error('Error signing out:', error);
-      throw error;
+      console.error('Error during sign out process:', error);
+      // Even if there's an error, ensure the user is logged out locally
+      setUser(null);
+      setProfile(null);
+      setSession(null);
     }
   };
 

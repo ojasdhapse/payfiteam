@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import { mockUser } from '../data/mockData';
+import { useAuth } from '../hooks/useAuth';
 import { Share2, Copy, Gift, TrendingUp, Users, Award } from 'lucide-react';
 
 const Referrals: React.FC = () => {
   const [copied, setCopied] = useState(false);
-  const referralLink = `https://crowdfund.app/ref/${mockUser.referralCode}`;
+  const { profile } = useAuth();
+  
+  const referralLink = profile ? `https://crowdfund.app/ref/${profile.referral_code}` : '';
 
   const handleCopyLink = () => {
+    if (!referralLink) return;
     navigator.clipboard.writeText(referralLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -14,16 +17,22 @@ const Referrals: React.FC = () => {
 
   const referralStats = [
     { label: 'Total Referrals', value: '28', icon: Users, color: 'blue' },
-    { label: 'Earnings', value: `$${mockUser.referralEarnings}`, icon: TrendingUp, color: 'green' },
-    { label: 'Tokens Earned', value: mockUser.tokensEarned.toString(), icon: Gift, color: 'purple' },
-    { label: 'NFTs Earned', value: mockUser.nftsEarned.length.toString(), icon: Award, color: 'orange' }
+    { label: 'Earnings', value: '0 SHM', icon: TrendingUp, color: 'green' },
+    { label: 'Tokens Earned', value: '0', icon: Gift, color: 'purple' },
+    { label: 'NFTs Earned', value: '0', icon: Award, color: 'orange' }
   ];
 
-  const recentReferrals = [
-    { name: 'Alice.eth', amount: '$500', reward: '$25', date: '2 days ago' },
-    { name: 'Bob.eth', amount: '$250', reward: '$12.50', date: '5 days ago' },
-    { name: 'Charlie.eth', amount: '$1000', reward: '$50', date: '1 week ago' }
-  ];
+  const recentReferrals: any[] = [];
+
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">Please sign in to view your referral dashboard.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -86,48 +95,35 @@ const Referrals: React.FC = () => {
           {/* Recent Referrals */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Referrals</h3>
-            <div className="space-y-4">
-              {recentReferrals.map((referral, index) => (
-                <div key={index} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
-                  <div>
-                    <p className="font-medium text-gray-900">{referral.name}</p>
-                    <p className="text-sm text-gray-500">Donated {referral.amount} • {referral.date}</p>
+            {recentReferrals.length > 0 ? (
+              <div className="space-y-4">
+                {recentReferrals.map((referral, index) => (
+                  <div key={index} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
+                    <div>
+                      <p className="font-medium text-gray-900">{referral.name}</p>
+                      <p className="text-sm text-gray-500">Donated {referral.amount} • {referral.date}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium text-green-600">{referral.reward}</p>
+                      <p className="text-xs text-gray-500">Your reward</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-medium text-green-600">{referral.reward}</p>
-                    <p className="text-xs text-gray-500">Your reward</p>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">No referrals yet. Share your link to get started!</p>
+              </div>
+            )}
             </div>
-          </div>
 
           {/* NFT Rewards */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Your NFT Rewards</h3>
-            <div className="grid grid-cols-2 gap-4">
-              {mockUser.nftsEarned.map((nft) => (
-                <div key={nft.id} className="border border-gray-200 rounded-lg p-3">
-                  <img
-                    src={nft.image}
-                    alt={nft.name}
-                    className="w-full h-24 object-cover rounded-lg mb-2"
-                  />
-                  <h4 className="font-medium text-gray-900 text-sm">{nft.name}</h4>
-                  <div className="flex items-center justify-between mt-1">
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      nft.tier === 'gold' ? 'bg-yellow-100 text-yellow-800' :
-                      nft.tier === 'silver' ? 'bg-gray-100 text-gray-800' :
-                      'bg-orange-100 text-orange-800'
-                    }`}>
-                      {nft.tier}
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      {nft.earnedAt.toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-              ))}
+            <div className="text-center py-8">
+              <Award className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500">No NFT rewards yet. Refer users to earn exclusive NFTs!</p>
             </div>
           </div>
         </div>

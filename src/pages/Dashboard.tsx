@@ -5,7 +5,6 @@ import CreateCampaignModal from '../components/CreateCampaignModal';
 import { useCampaigns } from '../hooks/useCampaigns';
 import { useAuth } from '../hooks/useAuth';
 import { useContributions } from '../hooks/useContributions';
-import { ipfsService } from '../lib/ipfs';
 import { Search, Filter, Plus, TrendingUp } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
@@ -150,65 +149,11 @@ const Dashboard: React.FC = () => {
           ) : filteredCampaigns.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredCampaigns.map((campaign) => (
-                <div
+                <CampaignCard
                   key={campaign.id}
+                  campaign={campaign}
                   onClick={() => handleCampaignClick(campaign.id)}
-                  className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1 overflow-hidden"
-                >
-                  <div className="relative">
-                    <img 
-                      src={campaign.image_ipfs_hash ? ipfsService.getFileUrl(campaign.image_ipfs_hash) : 'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=800'} 
-                      alt={campaign.title}
-                      className="w-full h-48 object-cover"
-                    />
-                    <div className="absolute top-4 left-4">
-                      <span className="px-3 py-1 bg-white/90 backdrop-blur-sm text-purple-700 text-xs font-semibold rounded-full">
-                        {campaign.category}
-                      </span>
-                    </div>
-                    <div className="absolute top-4 right-4">
-                      <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                        new Date(campaign.deadline) > new Date() 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {new Date(campaign.deadline) > new Date() 
-                          ? `${Math.ceil((new Date(campaign.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} days left`
-                          : 'Ended'
-                        }
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="p-6">
-                    <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">
-                      {campaign.title}
-                    </h3>
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                      {campaign.description}
-                    </p>
-
-                    <div className="space-y-4">
-                      <div>
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm text-gray-600">Progress</span>
-                          <span className="text-sm font-semibold text-gray-900">
-                            {campaign.current_funding.toFixed(2)} / {campaign.funding_goal.toFixed(2)} SHM
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full transition-all duration-500"
-                            style={{ width: `${Math.min((campaign.current_funding / campaign.funding_goal) * 100, 100)}%` }}
-                          ></div>
-                        </div>
-                        <span className="text-xs text-gray-500 mt-1 block">
-                          {((campaign.current_funding / campaign.funding_goal) * 100).toFixed(1)}% funded
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                />
               ))}
             </div>
           ) : (

@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
-import { mockGovernanceProposals, mockUser } from '../data/mockData';
+import { useAuth } from '../hooks/useAuth';
 import { Vote, Clock, CheckCircle, XCircle, AlertCircle, Users } from 'lucide-react';
 
 const Governance: React.FC = () => {
   const [selectedProposal, setSelectedProposal] = useState<string | null>(null);
+  const { profile } = useAuth();
+  
+  // For now, we'll show a placeholder since governance is not fully implemented
+  const mockGovernanceProposals: any[] = [];
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -55,12 +59,12 @@ const Governance: React.FC = () => {
             </div>
             <div className="text-right">
               <div className="text-2xl font-bold text-purple-600">
-                {mockUser.isVerified ? '5.2' : '0'}
+                {profile?.is_verified ? '5.2' : '0'}
               </div>
               <div className="text-sm text-gray-500">Voting Weight</div>
             </div>
           </div>
-          {mockUser.isVerified && (
+          {profile?.is_verified && (
             <div className="mt-4 flex items-center space-x-2">
               <CheckCircle className="w-5 h-5 text-green-500" />
               <span className="text-sm text-green-700 font-medium">Verified Voter</span>
@@ -72,7 +76,7 @@ const Governance: React.FC = () => {
         <div className="space-y-6">
           <h2 className="text-xl font-semibold text-gray-900">Active Proposals</h2>
           
-          {mockGovernanceProposals.map((proposal) => (
+          {mockGovernanceProposals.length > 0 ? mockGovernanceProposals.map((proposal) => (
             <div key={proposal.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
@@ -143,7 +147,7 @@ const Governance: React.FC = () => {
                 </div>
 
                 {/* Voting Actions */}
-                {proposal.status === 'active' && mockUser.isVerified && (
+                {proposal.status === 'active' && profile?.is_verified && (
                   <div className="flex space-x-3">
                     <button
                       onClick={() => handleVote(proposal.id, 'for')}
@@ -162,7 +166,7 @@ const Governance: React.FC = () => {
                   </div>
                 )}
 
-                {!mockUser.isVerified && (
+                {!profile?.is_verified && (
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                     <div className="flex items-center space-x-2">
                       <AlertCircle className="w-5 h-5 text-yellow-600" />
@@ -174,7 +178,15 @@ const Governance: React.FC = () => {
                 )}
               </div>
             </div>
-          ))}
+          )) : (
+            <div className="text-center py-12">
+              <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Vote className="w-8 h-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No active proposals</h3>
+              <p className="text-gray-600">Governance proposals will appear here when campaigns reach milestones.</p>
+            </div>
+          )}
         </div>
 
         {/* How Governance Works */}

@@ -1,5 +1,6 @@
 import React from 'react';
-import { Campaign } from '../types';
+import { Campaign } from '../hooks/useCampaigns';
+import { ipfsService } from '../lib/ipfs';
 import { Calendar, Target, TrendingUp, Users } from 'lucide-react';
 
 interface CampaignCardProps {
@@ -8,8 +9,8 @@ interface CampaignCardProps {
 }
 
 const CampaignCard: React.FC<CampaignCardProps> = ({ campaign, onClick }) => {
-  const progress = (campaign.raised / campaign.target) * 100;
-  const daysLeft = Math.ceil((campaign.deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  const progress = (campaign.current_funding / campaign.funding_goal) * 100;
+  const daysLeft = Math.ceil((new Date(campaign.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 
   return (
     <div 
@@ -18,7 +19,7 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign, onClick }) => {
     >
       <div className="relative">
         <img 
-          src={campaign.image} 
+          src={campaign.image_ipfs_hash ? ipfsService.getFileUrl(campaign.image_ipfs_hash) : 'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=800'} 
           alt={campaign.title}
           className="w-full h-48 object-cover"
         />
@@ -53,7 +54,7 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign, onClick }) => {
             <div className="flex justify-between items-center mb-2">
               <span className="text-sm text-gray-600">Progress</span>
               <span className="text-sm font-semibold text-gray-900">
-                ${campaign.raised.toLocaleString()} / ${campaign.target.toLocaleString()}
+                {campaign.current_funding.toFixed(2)} / {campaign.funding_goal.toFixed(2)} SHM
               </span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
@@ -69,24 +70,13 @@ const CampaignCard: React.FC<CampaignCardProps> = ({ campaign, onClick }) => {
 
           <div className="flex items-center justify-between text-sm text-gray-600">
             <div className="flex items-center space-x-1">
-              <Users className="w-4 h-4" />
-              <span>{campaign.milestones.length} milestones</span>
+              <Target className="w-4 h-4" />
+              <span>Goal: {campaign.funding_goal.toFixed(2)} SHM</span>
             </div>
             <div className="flex items-center space-x-1">
-              <TrendingUp className="w-4 h-4" />
-              <span>{Math.floor(Math.random() * 100) + 50} backers</span>
+              <Calendar className="w-4 h-4" />
+              <span>{new Date(campaign.deadline).toLocaleDateString()}</span>
             </div>
-          </div>
-
-          <div className="flex flex-wrap gap-1">
-            {campaign.tags.slice(0, 3).map((tag, index) => (
-              <span
-                key={index}
-                className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full"
-              >
-                #{tag}
-              </span>
-            ))}
           </div>
         </div>
       </div>

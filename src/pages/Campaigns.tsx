@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CampaignCard from '../components/CampaignCard';
-import { mockCampaigns } from '../data/mockData';
+import { useCampaigns } from '../hooks/useCampaigns';
 import { Search, Filter, SortAsc } from 'lucide-react';
 
 const Campaigns: React.FC = () => {
@@ -9,6 +9,8 @@ const Campaigns: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [sortBy, setSortBy] = useState('newest');
+  
+  const { campaigns, loading } = useCampaigns();
 
   const categories = ['All', 'Technology', 'Education', 'Environment', 'Healthcare', 'Social'];
   const sortOptions = [
@@ -18,7 +20,7 @@ const Campaigns: React.FC = () => {
     { value: 'funded', label: 'Most Funded' }
   ];
 
-  const filteredAndSortedCampaigns = mockCampaigns
+  const filteredAndSortedCampaigns = campaigns
     .filter(campaign => {
       const matchesSearch = campaign.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            campaign.description.toLowerCase().includes(searchTerm.toLowerCase());
@@ -28,13 +30,13 @@ const Campaigns: React.FC = () => {
     .sort((a, b) => {
       switch (sortBy) {
         case 'ending':
-          return a.deadline.getTime() - b.deadline.getTime();
+          return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
         case 'funded':
-          return (b.raised / b.target) - (a.raised / a.target);
+          return (b.current_funding / b.funding_goal) - (a.current_funding / a.funding_goal);
         case 'trending':
-          return b.raised - a.raised;
+          return b.current_funding - a.current_funding;
         default:
-          return b.deadline.getTime() - a.deadline.getTime();
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       }
     });
 
@@ -101,7 +103,17 @@ const Campaigns: React.FC = () => {
         </div>
 
         {/* Campaigns Grid */}
-        {filteredAndSortedCampaigns.length > 0 ? (
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 animate-pulse">
+                <div className="h-48 bg-gray-200 rounded-lg mb-4"></div>
+                <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              </div>
+            ))}
+          </div>
+        ) : filteredAndSortedCampaigns.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredAndSortedCampaigns.map((campaign) => (
               <CampaignCard
