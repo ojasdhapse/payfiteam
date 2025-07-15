@@ -3,14 +3,14 @@ import detectEthereumProvider from '@metamask/detect-provider';
 
 // Shardeum network configuration
 export const SHARDEUM_NETWORK = {
-  chainId: '0x1F92', // 8082 in hex
+  chainId: '0x1F93', // 8083 in hex (Shardeum testnet)
   chainName: 'Shardeum Sphinx',
   nativeCurrency: {
     name: 'Shardeum',
     symbol: 'SHM',
     decimals: 18,
   },
-  rpcUrls: [import.meta.env.VITE_SHARDEUM_RPC_URL || 'https://sphinx.shardeum.org/'],
+  rpcUrls: [import.meta.env.VITE_SHARDEUM_RPC_URL || 'https://api-testnet.shardeum.org'],
   blockExplorerUrls: ['https://explorer-sphinx.shardeum.org/'],
 };
 
